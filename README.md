@@ -1,4 +1,4 @@
-# snitch
+# snitch 🤫
 
 A command-line tool for extracting and presenting structured intelligence from [Suricata](https://suricata.io/) EVE JSON logs. Designed for SOC analysts who need to quickly pull key details and IOCs from raw event data without parsing through noise.
 
@@ -122,7 +122,6 @@ KEY DETAILS
 
 IOCs
   Suspicious IP:         192.168.11.15
-  Protocol String:       cityoffife
   URL Path:              /lf/+LF/sess/cur
   User-Agent:            WebLink (11.0.2506.19) (LFRA/11.1.2409.553)
 ------------------------------------------------------------
@@ -136,7 +135,7 @@ IOCs
     "event_type": "alert",
     "timestamp": "2026-03-07T02:45:27.711914+0000",
     "key_details": {
-      "Alert Signature": "ET INFO Outgoing Basic Auth Base64 HTTP Password detected unencrypted",
+      "Alert Signature": "ET INFO Outgoing Basic Auth Base64 HTTP Password detected encrypted",
       "Category": "Potential Corporate Privacy Violation",
       "Severity": 1,
       "Time Observed": "2026-03-07T02:45:27.711914+0000",
@@ -149,7 +148,6 @@ IOCs
     },
     "iocs": {
       "Suspicious IP": "192.168.11.15",
-      "Protocol String": "cityoffife",
       "URL Path": "/lf/+LF/sess/cur",
       "User-Agent": "WebLink (11.0.2506.19) (LFRA/11.1.2409.553)"
     }
@@ -163,7 +161,7 @@ IOCs
 
 | Flag | Description |
 | --- | --- |
-| `FILE` | Path to EVE JSON log file. Omit to read from stdin. |
+| `FILE` | Path to EVE JSON log file. |
 | `--format` | Output format: `text` (default) or `json` |
 | `--type TYPE` | Filter by event type (default: `alert`) |
 | `--sig PATTERN` | Filter alerts by signature substring (case-insensitive) |
