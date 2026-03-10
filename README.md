@@ -12,22 +12,22 @@ Suricata's EVE JSON output is verbose. `snitch` cuts through that verbosity and 
 
 ## Features
 
-- Parse Suricata EVE JSON from a file or piped/clipboard input
-- Extract structured **Key Details** per event:
-  - Alert signature(s)
-  - Time observed (first/last if multiple events)
+- Parse Suricata EVE JSON from a file or stdin
+- Extract structured **Key Details** per alert event:
+  - Alert signature, category, and severity
+  - Time observed
   - Network direction
   - Source and destination IPs and ports
   - Protocol
-- Extract **IOCs** where available:
-  - Suspicious source or destination IP (context-aware by direction)
-  - Suspicious protocol strings
-  - URL paths
-  - HTTP User-Agent strings
+- Extract **IOCs** where available (missing fields are silently skipped):
+  - Suspicious IP — context-aware: source for inbound, destination for outbound traffic
+  - Protocol string (TLS SNI, DNS query name, HTTP hostname, or transport protocol)
+  - URL path
+  - HTTP User-Agent
   - GeoIP country and city
-- Gracefully skips missing fields — no errors on partial data
+- Accepts native Suricata EVE NDJSON **and** Elasticsearch/Kibana export format
 - Output as human-readable text or JSON
-- Filter by event type, severity, or signature
+- Filter by signature keyword or limit event count
 
 ---
 
@@ -46,8 +46,6 @@ cd snitch
 If `~/.local/bin` is not in your PATH, the script will tell you and show the one line to add to your shell config.
 
 ### Optional: install as a package
-
-If you prefer `pip install` for virtual environments or system-wide use:
 
 ```bash
 pip install .          # standard install
@@ -70,11 +68,21 @@ Parse a local EVE log file:
 snitch eve.json
 ```
 
-Read from stdin (e.g. clipboard pipe):
+Paste JSON interactively (no file needed):
 
 ```bash
+snitch
+# Paste JSON below, then press Ctrl+D:
+# <paste your JSON here>
+# ^D
+```
+
+Or pipe from clipboard:
+
+```bash
+xclip -o | snitch         # Linux (X11)
+wl-paste | snitch         # Linux (Wayland)
 pbpaste | snitch          # macOS
-xclip -o | snitch         # Linux
 ```
 
 Output as JSON:
@@ -83,19 +91,13 @@ Output as JSON:
 snitch eve.json --format json
 ```
 
-Filter to alert events only:
-
-```bash
-snitch eve.json --type alert
-```
-
-Filter by signature keyword:
+Filter by signature keyword (case-insensitive):
 
 ```bash
 snitch eve.json --sig "ET MALWARE"
 ```
 
-Limit output to the first N events:
+Limit output to the first N matching events:
 
 ```bash
 snitch eve.json --limit 10
@@ -103,31 +105,44 @@ snitch eve.json --limit 10
 
 ---
 
-## Output Format
+## Input Format Compatibility
+
+`snitch` transparently handles multiple input shapes:
+
+| Format | Description |
+| --- | --- |
+| Native EVE NDJSON | One JSON object per line from `/var/log/suricata/eve.json` |
+| Elasticsearch hit | `{"_index": ..., "fields": {...}}` — raw EVE is extracted from `fields.message` |
+| JSON array | Array of either of the above (e.g. copy-pasted from Kibana) |
+
+---
+
+## Output
 
 ### Text (default)
 
 ```text
-────────────────────────────────────────────────────────────
-EVENT #1  [alert]  2024-11-14T03:22:11.443Z
-────────────────────────────────────────────────────────────
+------------------------------------------------------------
+EVENT #1  [alert]  2026-03-07T02:45:27.711914+0000
+------------------------------------------------------------
 KEY DETAILS
-  Alert Signature:      ET MALWARE Possible C2 Beacon
-  Time Observed:        2024-11-14T03:22:11.443Z
-  Network Direction:    outbound
-  Source IP:            192.168.1.45
-  Source Port:          51234
-  Destination IP:       45.33.32.156
-  Destination Port:     443
-  Protocol:             TCP
+  Alert Signature:       ET INFO Outgoing Basic Auth Base64 HTTP Password detected unencrypted
+  Category:              Potential Corporate Privacy Violation
+  Severity:              1
+  Time Observed:         2026-03-07T02:45:27.711914+0000
+  Network Direction:     Inbound -> Server
+  Source IP:             192.168.11.15
+  Source Port:           55842
+  Destination IP:        192.168.20.25
+  Destination Port:      80
+  Protocol:              TCP
 
 IOCs
-  Suspicious IP:        45.33.32.156 (destination)
-  User-Agent:           Mozilla/5.0 (compatible; MSIE 9.0)
-  URL Path:             /update/check
-  GeoIP Country:        United States
-  GeoIP City:           Fremont
-────────────────────────────────────────────────────────────
+  Suspicious IP:         192.168.11.15
+  Protocol String:       cityoffife
+  URL Path:              /lf/+LF/sess/cur
+  User-Agent:            WebLink (11.0.2506.19) (LFRA/11.1.2409.553)
+------------------------------------------------------------
 ```
 
 ### JSON (`--format json`)
@@ -136,23 +151,24 @@ IOCs
 [
   {
     "event_type": "alert",
-    "timestamp": "2024-11-14T03:22:11.443Z",
+    "timestamp": "2026-03-07T02:45:27.711914+0000",
     "key_details": {
-      "signature": "ET MALWARE Possible C2 Beacon",
-      "time_first": "2024-11-14T03:22:11.443Z",
-      "direction": "outbound",
-      "src_ip": "192.168.1.45",
-      "src_port": 51234,
-      "dest_ip": "45.33.32.156",
-      "dest_port": 443,
-      "protocol": "TCP"
+      "Alert Signature": "ET INFO Outgoing Basic Auth Base64 HTTP Password detected unencrypted",
+      "Category": "Potential Corporate Privacy Violation",
+      "Severity": 1,
+      "Time Observed": "2026-03-07T02:45:27.711914+0000",
+      "Network Direction": "Inbound -> Server",
+      "Source IP": "192.168.11.15",
+      "Source Port": 55842,
+      "Destination IP": "192.168.20.25",
+      "Destination Port": 80,
+      "Protocol": "TCP"
     },
     "iocs": {
-      "suspicious_ip": "45.33.32.156",
-      "user_agent": "Mozilla/5.0 (compatible; MSIE 9.0)",
-      "url_path": "/update/check",
-      "geoip_country": "United States",
-      "geoip_city": "Fremont"
+      "Suspicious IP": "192.168.11.15",
+      "Protocol String": "cityoffife",
+      "URL Path": "/lf/+LF/sess/cur",
+      "User-Agent": "WebLink (11.0.2506.19) (LFRA/11.1.2409.553)"
     }
   }
 ]
@@ -166,23 +182,11 @@ IOCs
 | --- | --- |
 | `FILE` | Path to EVE JSON log file. Omit to read from stdin. |
 | `--format` | Output format: `text` (default) or `json` |
-| `--type` | Filter by event type: `alert`, `http`, `dns`, `tls`, `flow` |
-| `--sig` | Filter alerts by signature substring (case-insensitive) |
+| `--type TYPE` | Filter by event type (default: `alert`) |
+| `--sig PATTERN` | Filter alerts by signature substring (case-insensitive) |
 | `--limit N` | Show only the first N matching events |
 | `--no-iocs` | Suppress the IOCs section |
 | `--no-color` | Disable colored output |
-
----
-
-## Supported EVE Event Types
-
-| Type | Key Details | IOCs |
-| --- | --- | --- |
-| `alert` | Signature, severity, category | IP, User-Agent, URL, GeoIP |
-| `http` | Method, hostname, URL | User-Agent, URL path |
-| `dns` | Query type, queried name | Domain |
-| `tls` | SNI, version, JA3 hash | Certificate subject, JA3 |
-| `flow` | Bytes/packets, state | IP |
 
 ---
 
@@ -190,28 +194,22 @@ IOCs
 
 ```text
 snitch/
+├── snitch                    # executable entry point (no install needed)
+├── install.sh                # symlinks snitch into ~/.local/bin
 ├── src/
 │   └── snitch/
 │       ├── __init__.py       # version
-│       ├── cli.py            # argparse entrypoint
-│       ├── loader.py         # EVE JSON reader (NDJSON)
-│       ├── normalize.py      # field normalization across EVE formats
+│       ├── cli.py            # argument parsing and pipeline orchestration
+│       ├── loader.py         # EVE JSON reader — handles native, ES, and array formats
+│       ├── normalize.py      # field normalization across EVE variants
 │       ├── formatter.py      # text and JSON rendering
-│       └── extractors/       # per-event-type field extractors
-│           ├── alert.py
-│           ├── http.py
-│           ├── dns.py
-│           └── tls.py
+│       └── extractors/
+│           └── alert.py      # key details and IOC extraction for alert events
 ├── tests/
+│   └── test_alert_extractor.py
 ├── pyproject.toml
 └── README.md
 ```
-
----
-
-## EVE JSON Compatibility
-
-`snitch` handles both native Suricata EVE output and Filebeat/ECS-flattened variants. Field resolution falls back gracefully between formats.
 
 ---
 

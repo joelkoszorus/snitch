@@ -47,6 +47,8 @@ def iter_events(source: str | None) -> Iterator[dict]:
     and JSON arrays of either.
     """
     if source is None:
+        if sys.stdin.isatty():
+            print("Paste JSON below, then press Ctrl+D:", file=sys.stderr)
         lines = sys.stdin
     else:
         lines = Path(source).open(encoding="utf-8")
