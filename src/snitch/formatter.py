@@ -2,7 +2,7 @@
 import json
 
 
-DIVIDER = "─" * 60
+DIVIDER = "-" * 60
 YELLOW  = "\033[33m"
 CYAN    = "\033[36m"
 BOLD    = "\033[1m"

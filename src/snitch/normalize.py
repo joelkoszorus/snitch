@@ -27,8 +27,8 @@ def normalize(event: dict) -> dict:
         "dest_ip":   _get(event, "dest_ip",   "suricata.eve.dest_ip",   "destination.ip"),
         "dest_port": _get(event, "dest_port", "suricata.eve.dest_port", "destination.port"),
         "proto":     _get(event, "proto",     "suricata.eve.proto",     "network.transport"),
-        # Direction (Suricata may include this for some event types)
-        "flow_direction": _get(event, "flow.direction", "suricata.eve.flow.direction"),
+        # Direction — top-level field in native EVE; also check legacy paths
+        "flow_direction": _get(event, "direction", "flow.direction", "suricata.eve.flow.direction"),
         # Alert fields
         "alert_signature":  _get(event, "alert.signature",  "suricata.eve.alert.signature"),
         "alert_category":   _get(event, "alert.category",   "suricata.eve.alert.category"),
