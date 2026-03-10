@@ -46,11 +46,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Suppress the IOCs section",
     )
     parser.add_argument(
-        "--clip",
-        action="store_true",
-        help="Read JSON from clipboard (requires xclip, xsel, or wl-paste)",
-    )
-    parser.add_argument(
         "--no-color",
         action="store_true",
         help="Disable colored output",
@@ -67,14 +62,10 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
-    from snitch.loader import iter_events, read_clipboard, _iter_blob
+    from snitch.loader import iter_events
     from snitch.normalize import normalize
     from snitch.extractors.alert import extract as extract_alert
     from snitch.formatter import render_text, render_json
-
-    if args.clip and args.file:
-        print("snitch: --clip and FILE are mutually exclusive", file=sys.stderr)
-        sys.exit(1)
 
     # Validate file path before processing
     if args.file is not None:
@@ -87,19 +78,10 @@ def main() -> None:
     show_iocs = not args.no_iocs
     target_type = args.event_type or "alert"
 
-    if args.clip:
-        try:
-            events = _iter_blob(read_clipboard())
-        except RuntimeError as e:
-            print(f"snitch: {e}", file=sys.stderr)
-            sys.exit(1)
-    else:
-        events = iter_events(args.file)
-
     json_records = []
     count = 0
 
-    for raw in events:
+    for raw in iter_events(args.file):
         norm = normalize(raw)
 
         if norm.get("event_type") != target_type:
