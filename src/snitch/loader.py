@@ -40,6 +40,31 @@ def _iter_parsed(raw) -> Iterator[dict]:
     yield raw
 
 
+def _iter_blob(content: str) -> Iterator[dict]:
+    """Parse a string that may be a single JSON value or NDJSON (one object per line)."""
+    content = content.strip()
+    if not content:
+        return
+
+    # Try parsing the whole blob as one JSON value first (handles arrays and
+    # single objects, including large pastes that span multiple lines).
+    try:
+        yield from _iter_parsed(json.loads(content))
+        return
+    except json.JSONDecodeError:
+        pass
+
+    # Fall back to NDJSON: parse line by line.
+    for lineno, line in enumerate(content.splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            yield from _iter_parsed(json.loads(line))
+        except json.JSONDecodeError as exc:
+            print(f"Warning: skipping malformed JSON on line {lineno}: {exc}", file=sys.stderr)
+
+
 def iter_events(source: str | None) -> Iterator[dict]:
     """Yield native EVE dicts from *source* path or stdin.
 
@@ -49,21 +74,9 @@ def iter_events(source: str | None) -> Iterator[dict]:
     if source is None:
         if sys.stdin.isatty():
             print("Paste JSON below, then press Ctrl+D:", file=sys.stderr)
-        lines = sys.stdin
+        # Read all stdin at once — avoids the ~4096-byte terminal line-buffer
+        # limit that truncates large pastes when reading line by line.
+        yield from _iter_blob(sys.stdin.read())
     else:
-        lines = Path(source).open(encoding="utf-8")
-
-    try:
-        for lineno, line in enumerate(lines, 1):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                raw = json.loads(line)
-            except json.JSONDecodeError as exc:
-                print(f"Warning: skipping malformed JSON on line {lineno}: {exc}", file=sys.stderr)
-                continue
-            yield from _iter_parsed(raw)
-    finally:
-        if source is not None:
-            lines.close()
+        path = Path(source)
+        yield from _iter_blob(path.read_text(encoding="utf-8"))
