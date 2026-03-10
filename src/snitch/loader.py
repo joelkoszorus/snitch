@@ -65,6 +65,31 @@ def _iter_blob(content: str) -> Iterator[dict]:
             print(f"Warning: skipping malformed JSON on line {lineno}: {exc}", file=sys.stderr)
 
 
+def read_clipboard() -> str:
+    """Return clipboard contents using the first available system utility.
+
+    Tries xclip, xsel, and wl-paste in order. Raises RuntimeError if none
+    are installed.
+    """
+    import subprocess
+
+    candidates = [
+        ["xclip", "-o", "-selection", "clipboard"],
+        ["xsel", "--output", "--clipboard"],
+        ["wl-paste"],
+    ]
+    for cmd in candidates:
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                return result.stdout
+        except FileNotFoundError:
+            continue
+    raise RuntimeError(
+        "No clipboard utility found. Install xclip, xsel, or wl-paste."
+    )
+
+
 def iter_events(source: str | None) -> Iterator[dict]:
     """Yield native EVE dicts from *source* path or stdin.
 

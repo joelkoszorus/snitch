@@ -68,21 +68,19 @@ Parse a local EVE log file:
 snitch eve.json
 ```
 
-Paste JSON interactively (no file needed):
+Read directly from clipboard (recommended for copy-paste from Kibana/ES):
 
 ```bash
-snitch
-# Paste JSON below, then press Ctrl+D:
-# <paste your JSON here>
-# ^D
+snitch --clip
 ```
 
-Or pipe from clipboard:
+Requires `xclip`, `xsel`, or `wl-paste` to be installed. `snitch` tries each in order and prints a clear error if none are found.
+
+Or pipe from clipboard manually:
 
 ```bash
-xclip -o | snitch         # Linux (X11)
-wl-paste | snitch         # Linux (Wayland)
-pbpaste | snitch          # macOS
+xclip -o -selection clipboard | snitch    # Linux (X11)
+wl-paste | snitch                         # Linux (Wayland)
 ```
 
 Output as JSON:
@@ -186,6 +184,7 @@ IOCs
 | `--sig PATTERN` | Filter alerts by signature substring (case-insensitive) |
 | `--limit N` | Show only the first N matching events |
 | `--no-iocs` | Suppress the IOCs section |
+| `--clip` | Read JSON from clipboard (requires xclip, xsel, or wl-paste) |
 | `--no-color` | Disable colored output |
 
 ---
