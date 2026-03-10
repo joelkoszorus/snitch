@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "snitch"
+version = "0.1.0"
+description = "Extract report-ready intelligence from Suricata EVE JSON logs"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[project.scripts]
+snitch = "snitch.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
