@@ -18,10 +18,15 @@ def _label(key: str, value, color: bool, width: int = 22) -> str:
 
 def render_text(index: int, event_type: str, timestamp: str,
                 key_details: dict, iocs: dict,
-                show_iocs: bool = True, color: bool = True) -> str:
+                show_iocs: bool = True, color: bool = True,
+                show_index: bool = True) -> str:
     lines = []
 
-    header = f"EVENT #{index}  [{event_type}]  {timestamp}"
+    header = (
+        f"EVENT #{index}  [{event_type}]  {timestamp}"
+        if show_index else
+        f"[{event_type}]  {timestamp}"
+    )
     if color:
         lines.append(f"{BOLD}{DIVIDER}{RESET}")
         lines.append(f"{BOLD}{header}{RESET}")

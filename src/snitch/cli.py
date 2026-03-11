@@ -79,6 +79,7 @@ def main() -> None:
     target_type = args.event_type or "alert"
 
     json_records = []
+    text_buffer  = []  # (index, norm, result) — held until count is known
     count = 0
 
     for raw in iter_events(args.file):
@@ -105,18 +106,23 @@ def main() -> None:
                 **result,
             })
         else:
+            text_buffer.append((count, norm, result))
+
+    if args.format == "json":
+        print(render_json(json_records))
+    else:
+        show_index = len(text_buffer) > 1
+        for index, norm, result in text_buffer:
             print(render_text(
-                index=count,
+                index=index,
                 event_type=target_type,
                 timestamp=norm.get("timestamp", "unknown"),
                 key_details=result["key_details"],
                 iocs=result["iocs"],
                 show_iocs=show_iocs,
                 color=color,
+                show_index=show_index,
             ))
-
-    if args.format == "json":
-        print(render_json(json_records))
 
     if count == 0:
         print("No matching events found.", file=sys.stderr)

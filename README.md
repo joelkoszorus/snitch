@@ -15,17 +15,19 @@ Suricata's EVE JSON output is verbose. `snitch` cuts through that verbosity and 
 - Parse Suricata EVE JSON from a file or stdin
 - Extract structured **Key Details** per alert event:
   - Alert signature, category, and severity
+  - CVE identifier (when present in rule metadata)
   - Time observed
   - Network direction
   - Source and destination IPs and ports
   - Protocol
 - Extract **IOCs** where available (missing fields are silently skipped):
-  - Suspicious IP — context-aware: source for inbound, destination for outbound traffic
+  - Suspicious IP — context-aware: source for inbound, destination for outbound; inferred from RFC1918 ranges when direction is absent
   - Protocol string (TLS SNI, DNS query name, HTTP hostname, or transport protocol)
   - URL path
   - HTTP User-Agent
-  - GeoIP country and city
+  - GeoIP country and city (recovered from Elasticsearch enrichment fields when not present in native EVE)
 - Accepts native Suricata EVE NDJSON **and** Elasticsearch/Kibana export format
+- Handles single events or multi-event JSON arrays — paste directly from Kibana
 - Output as human-readable text or JSON
 - Filter by signature keyword or limit event count
 
@@ -106,24 +108,27 @@ snitch eve.json --limit 10
 
 ```text
 ------------------------------------------------------------
-EVENT #1  [alert]  2026-03-07T02:45:27.711914+0000
+[alert]  2026-03-10T04:07:43.014112+0000
 ------------------------------------------------------------
 KEY DETAILS
-  Alert Signature:       ET INFO Outgoing Basic Auth Base64 HTTP Password detected unencrypted
-  Category:              Potential Corporate Privacy Violation
+  Alert Signature:       ET EXPLOIT Apache HTTP Server 2.4.49 - Path Traversal Attempt (CVE-2021-41773) M2
+  Category:              Attempted Administrator Privilege Gain
   Severity:              1
-  Time Observed:         2026-03-07T02:45:27.711914+0000
+  CVE:                   CVE-2021-41773
+  Time Observed:         2026-03-10T04:07:43.014112+0000
   Network Direction:     Inbound -> Server
-  Source IP:             192.168.11.15
-  Source Port:           55842
-  Destination IP:        192.168.20.25
+  Source IP:             165.245.168.176
+  Source Port:           37214
+  Destination IP:        10.62.0.12
   Destination Port:      80
   Protocol:              TCP
 
 IOCs
-  Suspicious IP:         192.168.11.15
-  URL Path:              /lf/+LF/sess/cur
-  User-Agent:            WebLink (11.0.2506.19) (LFRA/11.1.2409.553)
+  Suspicious IP:         165.245.168.176
+  Protocol String:       107.0.29.102
+  URL Path:              /cgi-bin/.%2e/.%2e/.%2e/.%2e/bin/sh
+  User-Agent:            libredtail-http
+  GeoIP Country:         United States
 ------------------------------------------------------------
 ```
 
@@ -133,23 +138,26 @@ IOCs
 [
   {
     "event_type": "alert",
-    "timestamp": "2026-03-07T02:45:27.711914+0000",
+    "timestamp": "2026-03-10T04:07:43.014112+0000",
     "key_details": {
-      "Alert Signature": "ET INFO Outgoing Basic Auth Base64 HTTP Password detected encrypted",
-      "Category": "Potential Corporate Privacy Violation",
+      "Alert Signature": "ET EXPLOIT Apache HTTP Server 2.4.49 - Path Traversal Attempt (CVE-2021-41773) M2",
+      "Category": "Attempted Administrator Privilege Gain",
       "Severity": 1,
-      "Time Observed": "2026-03-07T02:45:27.711914+0000",
+      "CVE": "CVE-2021-41773",
+      "Time Observed": "2026-03-10T04:07:43.014112+0000",
       "Network Direction": "Inbound -> Server",
-      "Source IP": "192.168.11.15",
-      "Source Port": 55842,
-      "Destination IP": "192.168.20.25",
+      "Source IP": "165.245.168.176",
+      "Source Port": 37214,
+      "Destination IP": "10.62.0.12",
       "Destination Port": 80,
       "Protocol": "TCP"
     },
     "iocs": {
-      "Suspicious IP": "192.168.11.15",
-      "URL Path": "/lf/+LF/sess/cur",
-      "User-Agent": "WebLink (11.0.2506.19) (LFRA/11.1.2409.553)"
+      "Suspicious IP": "165.245.168.176",
+      "Protocol String": "107.0.29.102",
+      "URL Path": "/cgi-bin/.%2e/.%2e/.%2e/.%2e/bin/sh",
+      "User-Agent": "libredtail-http",
+      "GeoIP Country": "United States"
     }
   }
 ]
@@ -187,6 +195,7 @@ snitch/
 │       └── extractors/
 │           └── alert.py      # key details and IOC extraction for alert events
 ├── tests/
+│   ├── samples/              # suricata export samples for testing
 │   └── test_alert_extractor.py
 ├── pyproject.toml
 └── README.md
