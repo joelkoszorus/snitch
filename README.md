@@ -1,4 +1,4 @@
-# snitch 🤫
+# snitch 🫢
 
 A command-line tool for extracting and presenting structured intelligence from [Suricata](https://suricata.io/) EVE JSON logs. Designed for SOC analysts who need to quickly pull key details and IOCs from raw event data without parsing through noise.
 
