@@ -28,7 +28,15 @@ def _iter_parsed(raw) -> Iterator[dict]:
         messages = fields.get("message")
         if messages and isinstance(messages, list):
             try:
-                yield json.loads(messages[0])
+                eve = json.loads(messages[0])
+                # Attach flattened ES fields (excluding message) so normalize.py
+                # can recover GeoIP enrichment added by Logstash/Elasticsearch.
+                eve["_es_fields"] = {
+                    k: (v[0] if isinstance(v, list) and v else v)
+                    for k, v in fields.items()
+                    if k != "message"
+                }
+                yield eve
                 return
             except (json.JSONDecodeError, TypeError):
                 pass

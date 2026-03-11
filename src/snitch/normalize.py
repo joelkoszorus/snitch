@@ -15,6 +15,22 @@ def _get(event: dict, *paths: str):
     return None
 
 
+def _get_es(event: dict, *keys: str):
+    """Look up values from the flat-key ES fields dict attached by the loader.
+
+    ES fields use literal dot-notation key names (e.g. ``"geoip.src.city_name"``)
+    rather than nested dicts, so standard ``_get`` cannot navigate them.
+    """
+    es = event.get("_es_fields")
+    if not es:
+        return None
+    for key in keys:
+        val = es.get(key)
+        if val is not None:
+            return val
+    return None
+
+
 def normalize(event: dict) -> dict:
     """Return a flat dict with stable keys regardless of EVE variant (native vs ECS/Filebeat)."""
     return {
@@ -46,11 +62,26 @@ def normalize(event: dict) -> dict:
         "tls_version": _get(event, "tls.version", "suricata.eve.tls.version"),
         "tls_ja3":     _get(event, "tls.ja3.hash", "suricata.eve.tls.ja3.hash"),
         "tls_subject": _get(event, "tls.subject",  "suricata.eve.tls.subject"),
-        # GeoIP — populated by Suricata's geoip module or Logstash enrichment
-        "geoip_src_country": _get(event, "src_ip_info.country_code", "source.geo.country_iso_code"),
-        "geoip_src_city":    _get(event, "src_ip_info.city",         "source.geo.city_name"),
-        "geoip_dest_country": _get(event, "dest_ip_info.country_code", "destination.geo.country_iso_code"),
-        "geoip_dest_city":    _get(event, "dest_ip_info.city",          "destination.geo.city_name"),
+        # Alert metadata
+        "alert_cve": _get(event, "alert.metadata.cve"),
+        # GeoIP — populated by Suricata's geoip module or Logstash/ES enrichment.
+        # Native EVE paths checked first; ES-enriched flat fields used as fallback.
+        "geoip_src_country": (
+            _get(event, "src_ip_info.country_code", "source.geo.country_iso_code")
+            or _get_es(event, "geoip.src_country.country_name", "geoip.src.country_name")
+        ),
+        "geoip_src_city": (
+            _get(event, "src_ip_info.city", "source.geo.city_name")
+            or _get_es(event, "geoip.src.city_name")
+        ),
+        "geoip_dest_country": (
+            _get(event, "dest_ip_info.country_code", "destination.geo.country_iso_code")
+            or _get_es(event, "geoip.dest_country.country_name", "geoip.dest.country_name")
+        ),
+        "geoip_dest_city": (
+            _get(event, "dest_ip_info.city", "destination.geo.city_name")
+            or _get_es(event, "geoip.dest.city_name")
+        ),
         # Keep the original for any ad-hoc access
         "_raw": event,
     }
