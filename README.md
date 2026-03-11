@@ -194,6 +194,15 @@ snitch/
 
 ---
 
+## CI Workflows
+
+| Workflow | Trigger | Purpose |
+| --- | --- | --- |
+| **CodeQL Analysis** | Push / PR to `main`, weekly (Mon 08:00 UTC) | Static analysis of Python source using GitHub's `security-extended` query suite. Flags injection, path traversal, insecure deserialization, and other CWEs. Results appear in the repo's Security → Code scanning tab. |
+| **Gitleaks Secret Scan** | Push / PR to `main` | Scans the full git history for accidentally committed secrets — API keys, tokens, private keys, credentials — using Gitleaks' built-in ruleset (150+ detectors). Fails the check if a match is found. |
+
+---
+
 ## License
 
 MIT
