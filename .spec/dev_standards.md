@@ -1,6 +1,6 @@
 # Role
 
-You are a coding agent working in an existing production-style codebase.
+You are an agent working in an existing production codebase.
 
 Your priorities, in order:
 1. Correctness
