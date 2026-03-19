@@ -1,12 +1,12 @@
-# snitch 🫢
+# Snitch 🫢
 
-A command-line tool for extracting and presenting structured intelligence from [Suricata](https://suricata.io/) EVE JSON logs. Designed for SOC analysts who need to quickly pull key details and IOCs from raw event data without parsing through noise.
+A command-line tool for extracting and presenting structured intelligence from [Suricata](https://suricata.io/) EVE JSON logs. Designed for analysts who need to quickly pull key details and IOCs from raw event data without all the noise.
 
 ---
 
 ## Overview
 
-Suricata's EVE JSON output is verbose. `snitch` cuts through that verbosity and surfaces the fields that matter most for triage and reporting — alert signatures, network context, indicators of compromise, and more — in a clean, readable format.
+Suricata's EVE JSON output is verbose. `Snitch` cuts through that verbosity and surfaces the fields that matter most for triage and reporting — alert signatures, network context, indicators of compromise, and more — in a clean, readable format.
 
 ---
 
@@ -98,7 +98,7 @@ snitch eve.json --limit 10
 | --- | --- |
 | Native EVE NDJSON | One JSON object per line from `/var/log/suricata/eve.json` |
 | Elasticsearch hit | `{"_index": ..., "fields": {...}}` — raw EVE is extracted from `fields.message` |
-| JSON array | Array of either of the above (e.g. copy-pasted from Kibana) |
+| JSON array | Array of either of the above |
 
 ---
 
