@@ -32,6 +32,7 @@ Suricata's EVE JSON output is verbose. `Snitch` cuts through that verbosity and 
 - Filter by signature keyword or limit event count
 
 ---
+> This project is a work in progress. Features and fixes are actively being developed.
 
 ## Installation
 
@@ -215,3 +216,5 @@ snitch/
 ## License
 
 MIT
+
+---
